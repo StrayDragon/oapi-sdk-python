@@ -1,6 +1,11 @@
 # Info
 PROJECT = "oapi-sdk-python"
-VERSION = "1.0.27"
+try:
+    import pkg_resources
+    PKG_NAME = "lark-oapi"
+    VERSION = pkg_resources.require(PKG_NAME)[0].version
+except:
+    VERSION = "unknown"
 
 # Domain
 FEISHU_DOMAIN = "https://open.feishu.cn"
