@@ -2,14 +2,12 @@ from distutils.core import setup
 
 from setuptools import find_packages
 
-from lark_oapi.core.const import VERSION, UTF_8
-
-with open("README.md", mode="r", encoding=UTF_8) as f:
+with open("README.md", mode="r", encoding="utf-8") as f:
     readme = f.read()
 
 setup(
     name="lark-oapi",
-    version=VERSION,
+    version="1.0.10",
     description="Lark OpenAPI SDK for Python",
     long_description=readme,
     long_description_content_type="text/markdown",
@@ -19,7 +17,7 @@ setup(
     packages=find_packages(),
     install_requires=["requests", "requests_toolbelt", "pycryptodome", "httpx"],
     extras_require={
-        "flask": ["Flask>=2"]
+        "flask": ["Flask"]
     },
     python_requires=">=3.7",
     keywords=["Lark", "OpenAPI"],
