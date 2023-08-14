@@ -15,7 +15,7 @@ setup(
     author_email="maowenbo@bytedance.com",
     url="https://github.com/larksuite/oapi-sdk-python",
     packages=find_packages(),
-    install_requires=["requests", "requests_toolbelt", "pycryptodome", "httpx"],
+    install_requires=["requests", "requests_toolbelt", "pycryptodome", "httpx", "attrs"],
     extras_require={
         "flask": ["Flask"]
     },
