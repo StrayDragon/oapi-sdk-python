@@ -1,5 +1,4 @@
 from distutils.core import setup
-
 from setuptools import find_packages
 
 with open("README.md", mode="r", encoding="utf-8") as f:
@@ -15,10 +14,15 @@ setup(
     author_email="maowenbo@bytedance.com",
     url="https://github.com/larksuite/oapi-sdk-python",
     packages=find_packages(),
-    install_requires=["pycryptodome", "requests", "requests_toolbelt", "attrs"],
-    extras_require={
-        "flask": ["Flask"]
-    },
+    install_requires=[
+        "pycryptodome",
+        "requests",
+        "requests_toolbelt",
+        "attrs",
+        "pydantic>=1,<2",
+        "typing_extensions",
+    ],
+    extras_require={"flask": ["Flask"]},
     python_requires=">=3.7",
     keywords=["Lark", "OpenAPI"],
     include_package_data=True,
