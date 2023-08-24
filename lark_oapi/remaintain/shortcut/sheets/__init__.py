@@ -3,7 +3,16 @@ from typing import Any, List, Optional, Sequence, Tuple, Dict
 
 from typing_extensions import Literal
 
-from lark_oapi.api.sheets.v3 import CreateSpreadsheetRequest, Spreadsheet
+from lark_oapi.api.sheets.v3 import (
+    CreateSpreadsheetRequest,
+    Spreadsheet,
+    FindSpreadsheetSheetRequest,
+    Find,
+    FindCondition,
+    FindReplaceResult,
+    QuerySpreadsheetSheetRequest,
+    Sheet,
+)
 from lark_oapi.remaintain.extra.service.drive_permission.v2.api import (
     Service as ExtraDrivePermissionV2Service,
 )
@@ -83,7 +92,15 @@ class FeishuSheetsShortcut:
         )
         resp = client.sheets.v3.spreadsheet.create(req)
         if not resp.success() or not resp.data or not resp.data.spreadsheet:
-            raise FeishuSheetsShortcutOperationError(str((resp.get_log_id(), resp.code, resp.msg,)))
+            raise FeishuSheetsShortcutOperationError(
+                str(
+                    (
+                        resp.get_log_id(),
+                        resp.code,
+                        resp.msg,
+                    )
+                )
+            )
         if auto_share_in_tenant:
             ss_token = resp.data.spreadsheet.spreadsheet_token
             if ss_token:
@@ -91,6 +108,74 @@ class FeishuSheetsShortcut:
                     ss_token=ss_token, link_share_entity="tenant_editable"
                 )
         return resp.data.spreadsheet
+
+    def get_spreadsheet_sheets(
+            self,
+            ss_token: str,
+    ) -> List[Sheet]:
+        client = self.s.upstream_client
+        req = QuerySpreadsheetSheetRequest.builder().spreadsheet_token(ss_token).build()
+        resp = client.sheets.v3.spreadsheet_sheet.query(req)
+        if not resp.success() or not resp.data or not resp.data.sheets:
+            raise FeishuSheetsShortcutOperationError(
+                str(
+                    (
+                        resp.get_log_id(),
+                        resp.code,
+                        resp.msg,
+                    )
+                )
+            )
+        return resp.data.sheets
+
+    def find_cell_pos_in_sheet(
+            self,
+            ss_token: str,
+            sheet_id: str,
+            text: str,
+            cond_cells_range: Optional[CellsRange] = None,
+            cond_match_case: bool = False,
+            cond_match_entire_cell: bool = False,
+            cond_search_by_regex: bool = False,
+            cond_include_formulas: bool = False,
+    ) -> FindReplaceResult:
+        client = self.s.upstream_client
+        range_ = sheet_id
+        if isinstance(cond_cells_range, CellsRange):
+            cond_cells_range_literal = cond_cells_range.to_param_range_pos_part()
+            range_ = f"{sheet_id}!{cond_cells_range_literal}"
+        req = (
+            FindSpreadsheetSheetRequest.builder()
+            .spreadsheet_token(ss_token)
+            .sheet_id(sheet_id)
+            .request_body(
+                Find.builder()
+                .find(text)
+                .find_condition(
+                    FindCondition.builder()
+                    .range(range_)
+                    .match_case(cond_match_case)
+                    .match_entire_cell(cond_match_entire_cell)
+                    .search_by_regex(cond_search_by_regex)
+                    .include_formulas(cond_include_formulas)
+                    .build(),
+                )
+                .build()
+            )
+            .build()
+        )
+        resp = client.sheets.v3.spreadsheet_sheet.find(req)
+        if not resp.success() or not resp.data or not resp.data.find_result:
+            raise FeishuSheetsShortcutOperationError(
+                str(
+                    (
+                        resp.get_log_id(),
+                        resp.code,
+                        resp.msg,
+                    )
+                )
+            )
+        return resp.data.find_result
 
     def batch_handle_sheets(
             self,
@@ -124,13 +209,17 @@ class FeishuSheetsShortcut:
         return resp
 
     def create_sheet(
-            self, ss_token: str,
+            self,
+            ss_token: str,
             title: str,
             index: int = 0,
     ) -> Dict[str, str]:
         r = extra_sheets_v2_model
         op_sheet = r.AddSheet(
-            properties=r.Properties(title=title, index=index, )
+            properties=r.Properties(
+                title=title,
+                index=index,
+            )
         )
         resp = self.batch_handle_sheets(
             ss_token=ss_token,
@@ -145,7 +234,11 @@ class FeishuSheetsShortcut:
                 sheet_name__sheet_id[rpp.title] = rpp.sheet_id
         return sheet_name__sheet_id
 
-    def remove_sheet(self, ss_token: str, sheet_id: str, ) -> None:
+    def remove_sheet(
+            self,
+            ss_token: str,
+            sheet_id: str,
+    ) -> None:
         r = extra_sheets_v2_model
         op_sheet = r.DeleteSheet(sheet_id=sheet_id)
         resp = self.batch_handle_sheets(
@@ -240,6 +333,51 @@ class FeishuSheetsShortcut:
                     )
                 )
             )
+            .set_spreadsheetToken(ss_token)
+            .do()
+        )
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
+
+    def append_insert_values(
+            self,
+            ss_token: str,
+            sheet_id: str,
+            cr: CellsRange,
+            values: Sequence[Sequence[Any]],
+            headers: Sequence[Any] = (),
+            insert_data_option: Literal["OVERWRITE", "INSERT_ROWS"] = "OVERWRITE",
+    ) -> None:
+        if not values:
+            raise FeishuSheetsShortcutOperationError("input invalid")
+        converted_values = []
+        n_max_cols = 0
+        n_rows = 0
+        _headers = list(headers)
+        if _headers:
+            converted_values.append(_headers)
+            n_rows += 1
+        for row in values:
+            n_max_cols = max(n_max_cols, len(row))
+            converted_values.append(list(row))
+            n_rows += 1
+        if not cr.start_pos:
+            cr.start_pos = CellPos(x="A", y=1)
+        if not cr.end_pos:
+            cr.end_pos = CellPos(x="")
+        cr.end_pos.x = cr.end_pos.x or utils.column_number_to_name(n_max_cols)
+        cr.end_pos.y = cr.end_pos.y or (n_rows + cr.start_pos.y)
+        range_text = f"{sheet_id}!" + cr.to_param_range_pos_part()
+        resp = (
+            self.extra_sheets_v2_service.spreadsheetss.values_append(
+                extra_sheets_v2_model.SpreadsheetsValuesAppendReqBody(
+                    value_range=extra_sheets_v2_model.ValueRange(
+                        range=range_text,
+                        values=converted_values,
+                    )
+                )
+            )
+            .set_insertDataOption(insert_data_option)
             .set_spreadsheetToken(ss_token)
             .do()
         )
