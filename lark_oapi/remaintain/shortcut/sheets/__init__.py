@@ -3,6 +3,13 @@ from typing import Any, List, Optional, Sequence, Tuple, Dict
 
 from typing_extensions import Literal
 
+from lark_oapi.api.sheets.v3 import CreateSpreadsheetRequest, Spreadsheet
+from lark_oapi.remaintain.extra.service.drive_permission.v2.api import (
+    Service as ExtraDrivePermissionV2Service,
+)
+from lark_oapi.remaintain.extra.service.drive_permission.v2 import (
+    model as extra_drive_permission_v2_model,
+)
 from lark_oapi.remaintain.extra.service.sheets.v2 import Service as ExtraSheetsV2Service
 from lark_oapi.remaintain.extra.service.sheets.v2 import model as extra_sheets_v2_model
 from lark_oapi.remaintain.shortcut.compact import FeishuOpenAPICompactSettings
@@ -11,14 +18,142 @@ from lark_oapi.remaintain.shortcut.sheets.models import SheetRange, CellsRange, 
 from lark_oapi.remaintain.shortcut.sheets.models import cell_value_support_data_types
 
 
+class FeishuSheetsShortcutOperationError(Exception):
+    pass
+
+
 @dataclasses.dataclass
 class FeishuSheetsShortcut:
     s: FeishuOpenAPICompactSettings
 
     extra_sheets_v2_service: ExtraSheetsV2Service = dataclasses.field(init=False)
+    extra_drive_permission_v2_service: ExtraDrivePermissionV2Service = (
+        dataclasses.field(init=False)
+    )
 
     def __post_init__(self):
-        self.extra_sheets_v2_service = ExtraSheetsV2Service(self.s.remaintain_extra_config)
+        conf = self.s.remaintain_extra_config
+        self.extra_sheets_v2_service = ExtraSheetsV2Service(conf)
+        self.extra_drive_permission_v2_service = ExtraDrivePermissionV2Service(conf)
+
+    def change_spreadsheet_permission(
+            self,
+            ss_token: str,
+            link_share_entity: Literal[
+                "tenant_readable", "tenant_editable", "anyone_readable", "anyone_editable"
+            ],
+    ) -> None:
+        """
+        :param link_share_entity:
+        "tenant_readable" - 组织内获得链接的人可阅读
+        "tenant_editable" - 组织内获得链接的人可编辑
+        "anyone_readable" - 获得链接的任何人可阅读
+        "anyone_editable" - 获得链接的任何人可编辑
+        """
+        resp = self.extra_drive_permission_v2_service.publics.update(
+            body=extra_drive_permission_v2_model.PublicUpdateReqBody(
+                token=ss_token,
+                type="sheet",
+                link_share_entity=link_share_entity,
+            ),
+        ).do()
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
+
+    def create_spreadsheet(
+            self,
+            folder_token: str,
+            title: str,
+            auto_share_in_tenant: bool = False,
+    ) -> Spreadsheet:
+        client = self.s.upstream_client
+        req = (
+            CreateSpreadsheetRequest.builder()
+            .request_body(
+                Spreadsheet.builder()
+                .title(
+                    title,
+                )
+                .folder_token(
+                    folder_token,
+                )
+                .build()
+            )
+            .build()
+        )
+        resp = client.sheets.v3.spreadsheet.create(req)
+        if not resp.success() or not resp.data or not resp.data.spreadsheet:
+            raise FeishuSheetsShortcutOperationError(str((resp.get_log_id(), resp.code, resp.msg,)))
+        if auto_share_in_tenant:
+            ss_token = resp.data.spreadsheet.spreadsheet_token
+            if ss_token:
+                self.change_spreadsheet_permission(
+                    ss_token=ss_token, link_share_entity="tenant_editable"
+                )
+        return resp.data.spreadsheet
+
+    def batch_handle_sheets(
+            self,
+            ss_token: str,
+            add_sheet: Optional[extra_sheets_v2_model.AddSheet] = None,
+            copy_sheet: Optional[extra_sheets_v2_model.CopySheet] = None,
+            delete_sheet: Optional[extra_sheets_v2_model.DeleteSheet] = None,
+            update_sheet: Optional[extra_sheets_v2_model.UpdateSheet] = None,
+    ):
+        req_params = dict(
+            add_sheet=add_sheet,
+            copy_sheet=copy_sheet,
+            delete_sheet=delete_sheet,
+            update_sheet=update_sheet,
+        )
+        r = extra_sheets_v2_model
+        req = r.SpreadsheetsSheetsBatchUpdateReqBody(
+            requests=r.Request(
+                **req_params,
+            ),
+        )
+        resp = (
+            self.extra_sheets_v2_service.spreadsheetss.sheets_batch_update(
+                req,
+            )
+            .set_spreadsheetToken(
+                ss_token,
+            )
+            .do()
+        )
+        return resp
+
+    def create_sheet(
+            self, ss_token: str,
+            title: str,
+            index: int = 0,
+    ) -> Dict[str, str]:
+        r = extra_sheets_v2_model
+        op_sheet = r.AddSheet(
+            properties=r.Properties(title=title, index=index, )
+        )
+        resp = self.batch_handle_sheets(
+            ss_token=ss_token,
+            add_sheet=op_sheet,
+        )
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
+        sheet_name__sheet_id = {}
+        for rp in resp.data.replies:
+            if rp.add_sheet:
+                rpp = rp.add_sheet.properties
+                sheet_name__sheet_id[rpp.title] = rpp.sheet_id
+        return sheet_name__sheet_id
+
+    def remove_sheet(self, ss_token: str, sheet_id: str, ) -> None:
+        r = extra_sheets_v2_model
+        op_sheet = r.DeleteSheet(sheet_id=sheet_id)
+        resp = self.batch_handle_sheets(
+            ss_token=ss_token,
+            delete_sheet=op_sheet,
+        )
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def merge_cells(
             self,
@@ -26,7 +161,7 @@ class FeishuSheetsShortcut:
             sheet_id: str,
             cr: CellsRange,
             merge_type: Literal["MERGE_ALL", "MERGE_ROWS", "MERGE_COLUMNS"] = "MERGE_ALL",
-    ) -> str:
+    ) -> None:
         r = extra_sheets_v2_model
         range_text = f"{sheet_id}!" + cr.to_param_range_pos_part()
         req = r.SpreadsheetsMergeCellsReqBody(
@@ -43,15 +178,14 @@ class FeishuSheetsShortcut:
             )
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def unmerge_cells(
             self,
             ss_token: str,
             sr: SheetRange,
-    ) -> str:
+    ) -> None:
         r = extra_sheets_v2_model
         range_text = sr.to_param_range()
         req = r.SpreadsheetsUnmergeCellsReqBody(
@@ -66,9 +200,8 @@ class FeishuSheetsShortcut:
             )
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def prepend_insert_values(
             self,
@@ -77,9 +210,9 @@ class FeishuSheetsShortcut:
             cr: CellsRange,
             values: Sequence[Sequence[Any]],
             headers: Sequence[Any] = (),
-    ) -> str:
+    ) -> None:
         if not values:
-            return "not sheet"
+            raise FeishuSheetsShortcutOperationError("input invalid")
         converted_values = []
         n_max_cols = 0
         n_rows = 0
@@ -110,18 +243,17 @@ class FeishuSheetsShortcut:
             .set_spreadsheetToken(ss_token)
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def batch_update_values(
             self,
             ss_token: str,
             sheet_id: str,
             cr_values: List[Tuple[CellsRange, Sequence[Sequence[Any]]]],
-    ):
+    ) -> None:
         if not cr_values:
-            return "empty input"
+            raise FeishuSheetsShortcutOperationError("input invalid")
         value_ranges = []
         for cr, values in cr_values:
             converted_values = []
@@ -153,21 +285,24 @@ class FeishuSheetsShortcut:
             .set_spreadsheetToken(ss_token)
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def batch_read_values(
             self,
             ss_token: str,
             sheet_id: str,
             crs: List[CellsRange],
-            value_render_option: Literal["ToString", "FormattedValue", "Formula", "UnformattedValue"] = "ToString",
+            value_render_option: Literal[
+                "ToString", "FormattedValue", "Formula", "UnformattedValue"
+            ] = "ToString",
             date_time_render_option: str = "FormattedString",
-    ) -> Tuple[Dict[str, List[list]], str]:
+    ) -> Dict[str, List[list]]:
         if not crs:
-            return {}, "empty input"
-        range_texts = ",".join([f"{sheet_id}!" + cr.to_param_range_pos_part() for cr in crs])
+            raise FeishuSheetsShortcutOperationError("input invalid")
+        range_texts = ",".join(
+            [f"{sheet_id}!" + cr.to_param_range_pos_part() for cr in crs]
+        )
         resp = (
             self.extra_sheets_v2_service.spreadsheetss.values_batch_get()
             .set_spreadsheetToken(ss_token)
@@ -177,11 +312,13 @@ class FeishuSheetsShortcut:
             .do()
         )
         if resp.code != 0:
-            return {}, str(resp)
+            raise FeishuSheetsShortcutOperationError(str(resp))
         range_cr__values = {}
         for vr in resp.data.value_ranges:
-            range_cr__values[SheetRange.from_literal(vr.range).to_param_range_pos_part()] = vr.values
-        return range_cr__values, ""
+            range_cr__values[
+                SheetRange.from_literal(vr.range).to_param_range_pos_part()
+            ] = vr.values
+        return range_cr__values
 
     def update_formula_value_cell(
             self,
@@ -190,27 +327,28 @@ class FeishuSheetsShortcut:
             formula_text: str,
             result_cell_pos: CellPos,
             auto_merge_cells_range: Optional[CellsRange] = None,
-    ):
+    ) -> None:
         values = [
             [
                 cell_value_support_data_types.Formula(text=formula_text).dict(),
             ]
         ]
-        op__err_msg = {}
-        op__err_msg["insert_formula_value"] = self.batch_update_values(
+        self.batch_update_values(
             ss_token=ss_token,
             sheet_id=sheet_id,
             cr_values=[
-                (CellsRange(start_pos=result_cell_pos, end_pos=result_cell_pos), values),
+                (
+                    CellsRange(start_pos=result_cell_pos, end_pos=result_cell_pos),
+                    values,
+                ),
             ],
         )
-        if auto_merge_cells_range and not op__err_msg["insert_formula_value"]:
-            op__err_msg["merge_cells"] = self.merge_cells(
+        if auto_merge_cells_range:
+            self.merge_cells(
                 ss_token=ss_token,
                 sheet_id=sheet_id,
                 cr=auto_merge_cells_range,
             )
-        return op__err_msg
 
     def update_formula_value_cell_using_sum_of_cell_range(
             self,
@@ -219,8 +357,8 @@ class FeishuSheetsShortcut:
             target_cells_range: CellsRange,
             result_cell_pos: CellPos,
             auto_merge_cells_range: Optional[CellsRange] = None,
-    ):
-        return self.update_formula_value_cell(
+    ) -> None:
+        self.update_formula_value_cell(
             ss_token=ss_token,
             sheet_id=sheet_id,
             formula_text=f"=SUM({target_cells_range.to_param_range_pos_part()})",
@@ -236,7 +374,7 @@ class FeishuSheetsShortcut:
             start_index=0,
             end_index=1,
             inherit_style=None,
-    ):
+    ) -> None:
         resp = (
             self.extra_sheets_v2_service.spreadsheetss.insert_dimension_range(
                 extra_sheets_v2_model.SpreadsheetsInsertDimensionRangeReqBody(
@@ -254,9 +392,8 @@ class FeishuSheetsShortcut:
             )
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
 
     def delete_dimension(
             self,
@@ -265,7 +402,7 @@ class FeishuSheetsShortcut:
             dimension: Literal["ROWS", "COLUMNS"] = "ROWS",
             start_index=1,
             end_index=1,
-    ):
+    ) -> None:
         resp = (
             self.extra_sheets_v2_service.spreadsheetss.dimension_range_delete(
                 extra_sheets_v2_model.SpreadsheetsDimensionRangeDeleteReqBody(
@@ -282,6 +419,5 @@ class FeishuSheetsShortcut:
             )
             .do()
         )
-        if resp.code == 0:
-            return ""
-        return str(resp)
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
