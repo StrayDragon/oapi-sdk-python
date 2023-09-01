@@ -300,8 +300,8 @@ class FeishuSheetsShortcut:
             self,
             ss_token: str,
             sheet_id: str,
-            cr: CellsRange,
-            values: Sequence[Sequence[Any]],
+            cr: Optional[CellsRange] = None,
+            values: Optional[Sequence[Sequence[Any]]] = None,
             headers: Sequence[Any] = (),
     ) -> None:
         if not values:
@@ -317,6 +317,8 @@ class FeishuSheetsShortcut:
             n_max_cols = max(n_max_cols, len(row))
             converted_values.append(list(row))
             n_rows += 1
+        if not isinstance(cr, CellsRange):
+            cr = CellsRange()
         if not cr.start_pos:
             cr.start_pos = CellPos(x="A", y=1)
         if not cr.end_pos:
@@ -343,8 +345,8 @@ class FeishuSheetsShortcut:
             self,
             ss_token: str,
             sheet_id: str,
-            cr: CellsRange,
-            values: Sequence[Sequence[Any]],
+            cr: Optional[CellsRange] = None,
+            values: Optional[Sequence[Sequence[Any]]] = None,
             headers: Sequence[Any] = (),
             insert_data_option: Literal["OVERWRITE", "INSERT_ROWS"] = "OVERWRITE",
     ) -> None:
@@ -361,6 +363,8 @@ class FeishuSheetsShortcut:
             n_max_cols = max(n_max_cols, len(row))
             converted_values.append(list(row))
             n_rows += 1
+        if not isinstance(cr, CellsRange):
+            cr = CellsRange()
         if not cr.start_pos:
             cr.start_pos = CellPos(x="A", y=1)
         if not cr.end_pos:
@@ -559,3 +563,66 @@ class FeishuSheetsShortcut:
         )
         if resp.code != 0:
             raise FeishuSheetsShortcutOperationError(str(resp))
+
+    def truncate_sheet(
+            self,
+            ss_token: str,
+            sheet_id: str,
+    ):
+        sheet_id__sheet = {
+            s.sheet_id: s
+            for s in self.get_spreadsheet_sheets(
+                ss_token=ss_token,
+            )
+        }
+        sheet = sheet_id__sheet.get(sheet_id)
+        if not sheet:
+            raise FeishuSheetsShortcutOperationError(
+                f"not found sheet:{sheet_id} in {ss_token}"
+            )
+        sg = sheet.grid_properties
+        n_rows, n_columns = 0, 0
+        if sg:
+            n_rows, n_columns = sg.row_count, sg.column_count
+        if n_rows <= 0 or n_columns <= 0:
+            raise FeishuSheetsShortcutOperationError("fetch sheet properties failed")
+        self.insert_dimension(
+            ss_token=ss_token,
+            sheet_id=sheet_id,
+        )
+        N_MAX_DELETE_LINE = 5000
+        n_inserted = 1
+        start_index = 1 + n_inserted
+        end_index = n_rows + n_inserted
+        for st, ed in [
+                          (i, min(i + N_MAX_DELETE_LINE, end_index))
+                          for i in range(
+                start_index,
+                end_index + 1,
+                N_MAX_DELETE_LINE,
+            )
+                      ][::-1]:
+            self.delete_dimension(
+                ss_token=ss_token,
+                sheet_id=sheet_id,
+                start_index=st,
+                end_index=ed,
+            )
+
+    def replace_sheet_by_values(
+            self,
+            ss_token: str,
+            sheet_id: str,
+            values: List[list],
+            headers: Sequence[Any] = (),
+    ):
+        self.truncate_sheet(
+            ss_token=ss_token,
+            sheet_id=sheet_id,
+        )
+        self.prepend_insert_values(
+            ss_token=ss_token,
+            sheet_id=sheet_id,
+            values=values,
+            headers=headers,
+        )
