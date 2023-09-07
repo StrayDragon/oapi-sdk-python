@@ -188,6 +188,12 @@ class ClientBuilder(object):
         self._config.log_level = log_level
         return self
 
+    def requests_retry_config(
+        self, requests_retry_config: Optional[urllib3.Retry]
+    ) -> "ClientBuilder":
+        self._config.requests_retry_config = requests_retry_config
+        return self
+
     def build(self) -> Client:
         client: Client = Client()
         client._config = self._config
