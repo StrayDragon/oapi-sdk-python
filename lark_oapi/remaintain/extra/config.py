@@ -1,5 +1,7 @@
 import os
-from typing import Tuple
+from typing import Tuple, Optional
+
+from urllib3 import Retry
 
 from .consts import APP_TYPE_ISV, APP_TYPE_INTERNAL
 from .logger import Logger, LoggerProxy, LEVEL_ERROR, DefaultLogger
@@ -10,33 +12,57 @@ from .store import MemoryStore, Store
 class Config:
     def __init__(
         self,
-        domain,
-        app_settings,
-        logger=DefaultLogger(),
-        log_level=LEVEL_ERROR,
-        store=MemoryStore(),
+        domain: str,
+        app_settings: AppSettings,
+        logger: Logger = DefaultLogger(),
+        log_level: int = LEVEL_ERROR,
+        store: Store = MemoryStore(),
+        requests_retry_config: Optional[Retry] = None,
     ):
-        # type: (str, AppSettings, Logger, int, Store) -> None
         self.domain = domain
         self.app_settings = app_settings
         self.logger = LoggerProxy(log_level, logger)
         self.store = store
         self.helpDeskAuthorization = app_settings.get_help_desk_authorization()
+        self.requests_retry_config = requests_retry_config
 
     @staticmethod
     def new_config_with_memory_store(
-        domain, settings, logger, log_level
-    ):  # type: (str, AppSettings, Logger, int) -> Config
-        return Config(domain, settings, logger, log_level, MemoryStore())
+        domain: str,
+        settings: AppSettings,
+        logger: Logger,
+        log_level: int,
+        retry_settings: Optional[Retry] = None,
+    ):
+        return Config(
+            domain,
+            settings,
+            logger,
+            log_level,
+            MemoryStore(),
+            retry_settings,
+        )
 
     @staticmethod
     def new_config(
-        domain, settings, logger, log_level, store
-    ):  # type: (str, AppSettings, Logger, int, Store) -> Config
-        return Config(domain, settings, logger, log_level, store)
+        domain: str,
+        settings: AppSettings,
+        logger: Logger,
+        log_level: int,
+        store: Store,
+        retry_settings: Optional[Retry] = None,
+    ):
+        return Config(
+            domain,
+            settings,
+            logger,
+            log_level,
+            store,
+            retry_settings,
+        )
 
     @staticmethod
-    def __app_settings_from_env():  # type: () -> Tuple[str, str, str, str, str, str]
+    def __app_settings_from_env() -> Tuple[str, str, str, str, str, str]:
         """
         This function reads app_id, app_secret, ... from system env.
         If app_id or app_secret doesn't exist in system env, a RuntimeError will be raised.
@@ -115,13 +141,13 @@ class Config:
 
     @staticmethod
     def new_internal_app_settings(
-        app_id="",
-        app_secret="",
-        verification_token="",
-        encrypt_key="",
-        help_desk_id="",
-        help_desk_token="",
-    ):  # type: (str, str, str, str, str, str) -> AppSettings
+        app_id: str = "",
+        app_secret: str = "",
+        verification_token: str = "",
+        encrypt_key: str = "",
+        help_desk_id: str = "",
+        help_desk_token: str = "",
+    ) -> AppSettings:
         return AppSettings(
             APP_TYPE_INTERNAL,
             app_id,
@@ -134,13 +160,13 @@ class Config:
 
     @staticmethod
     def new_isv_app_settings(
-        app_id="",
-        app_secret="",
-        verification_token="",
-        encrypt_key="",
-        help_desk_id="",
-        help_desk_token="",
-    ):  # type: (str, str, str, str, str, str) -> AppSettings
+        app_id: str = "",
+        app_secret: str = "",
+        verification_token: str = "",
+        encrypt_key: str = "",
+        help_desk_id: str = "",
+        help_desk_token: str = "",
+    ) -> AppSettings:
         return AppSettings(
             APP_TYPE_ISV,
             app_id,
