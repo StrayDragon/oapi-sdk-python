@@ -1,11 +1,15 @@
+import functools
 import re
 from typing import Optional
 
 from pydantic import BaseModel
 
+from .. import utils
 
+
+@functools.total_ordering
 class CellPos(BaseModel):
-    x: str
+    x: str = ""
     y: int = 0
 
     @classmethod
@@ -31,6 +35,9 @@ class CellPos(BaseModel):
         if y > 0:
             return f"{x}{y}"
         return x
+
+    def __lt__(self, other):
+        return (utils.column_name_to_number(self.x), self.y) < (utils.column_name_to_number(other.x), other.y)
 
 
 class CellsRange(BaseModel):

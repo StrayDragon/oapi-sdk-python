@@ -46,11 +46,11 @@ class FeishuSheetsShortcut:
         self.extra_drive_permission_v2_service = ExtraDrivePermissionV2Service(conf)
 
     def change_spreadsheet_permission(
-            self,
-            ss_token: str,
-            link_share_entity: Literal[
-                "tenant_readable", "tenant_editable", "anyone_readable", "anyone_editable"
-            ],
+        self,
+        ss_token: str,
+        link_share_entity: Literal[
+            "tenant_readable", "tenant_editable", "anyone_readable", "anyone_editable"
+        ],
     ) -> None:
         """
         :param link_share_entity:
@@ -70,10 +70,10 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def create_spreadsheet(
-            self,
-            folder_token: str,
-            title: str,
-            auto_share_in_tenant: bool = False,
+        self,
+        folder_token: str,
+        title: str,
+        auto_share_in_tenant: bool = False,
     ) -> Spreadsheet:
         client = self.s.upstream_client
         req = (
@@ -110,8 +110,8 @@ class FeishuSheetsShortcut:
         return resp.data.spreadsheet
 
     def get_spreadsheet_sheets(
-            self,
-            ss_token: str,
+        self,
+        ss_token: str,
     ) -> List[Sheet]:
         client = self.s.upstream_client
         req = QuerySpreadsheetSheetRequest.builder().spreadsheet_token(ss_token).build()
@@ -128,16 +128,16 @@ class FeishuSheetsShortcut:
             )
         return resp.data.sheets
 
-    def find_cell_pos_in_sheet(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            text: str,
-            cond_cells_range: Optional[CellsRange] = None,
-            cond_match_case: bool = False,
-            cond_match_entire_cell: bool = False,
-            cond_search_by_regex: bool = False,
-            cond_include_formulas: bool = False,
+    def find_cell_locations_in_sheet(
+        self,
+        ss_token: str,
+        sheet_id: str,
+        text: str,
+        cond_cells_range: Optional[CellsRange] = None,
+        cond_match_case: bool = False,
+        cond_match_entire_cell: bool = False,
+        cond_search_by_regex: bool = False,
+        cond_include_formulas: bool = False,
     ) -> FindReplaceResult:
         client = self.s.upstream_client
         range_ = sheet_id
@@ -177,13 +177,65 @@ class FeishuSheetsShortcut:
             )
         return resp.data.find_result
 
+    def recursive_find_cell_locations_in_sheet(
+        self,
+        ss_token: str,
+        sheet_id: str,
+        texts: List[str],
+        cond_cells_range: Optional[CellsRange] = None,
+        cond_match_case: bool = False,
+        cond_match_entire_cell: bool = False,
+        cond_search_by_regex: bool = False,
+        cond_include_formulas: bool = False,
+    ) -> Optional[FindReplaceResult]:
+        further_cell_range = cond_cells_range
+        result = None
+        for text in texts:
+            result = self.find_cell_location_in_sheet(
+                ss_token=ss_token,
+                sheet_id=sheet_id,
+                text=text,
+                cond_cells_range=further_cell_range,
+                cond_match_case=cond_match_case,
+                cond_match_entire_cell=cond_match_entire_cell,
+                cond_search_by_regex=cond_search_by_regex,
+                cond_include_formulas=cond_include_formulas,
+            )
+            cp_texts = []
+            if cond_include_formulas:
+                if result.matched_formula_cells:
+                    cp_texts = result.matched_formula_cells
+                elif result.matched_cells:
+                    cp_texts = result.matched_cells
+            else:
+                if result.matched_cells:
+                    cp_texts = result.matched_cells
+                elif result.matched_formula_cells:
+                    cp_texts = result.matched_formula_cells
+            if not cp_texts:
+                break
+            cp_texts.sort(key=lambda t: CellPos.from_literal(t))
+            try:
+                start_cp, end_cp = CellPos.from_literal(
+                    cp_texts[0]
+                ), CellPos.from_literal(cp_texts[-1])
+            except:
+                break
+            if start_cp.x == end_cp.x:
+                start_cp.x = end_cp.x = ""
+            else:
+                start_cp.y = end_cp.y = 0
+            further_cell_range = CellsRange(start_pos=start_cp, end_pos=end_cp)
+
+        return result
+
     def batch_handle_sheets(
-            self,
-            ss_token: str,
-            add_sheet: Optional[extra_sheets_v2_model.AddSheet] = None,
-            copy_sheet: Optional[extra_sheets_v2_model.CopySheet] = None,
-            delete_sheet: Optional[extra_sheets_v2_model.DeleteSheet] = None,
-            update_sheet: Optional[extra_sheets_v2_model.UpdateSheet] = None,
+        self,
+        ss_token: str,
+        add_sheet: Optional[extra_sheets_v2_model.AddSheet] = None,
+        copy_sheet: Optional[extra_sheets_v2_model.CopySheet] = None,
+        delete_sheet: Optional[extra_sheets_v2_model.DeleteSheet] = None,
+        update_sheet: Optional[extra_sheets_v2_model.UpdateSheet] = None,
     ):
         req_params = dict(
             add_sheet=add_sheet,
@@ -209,10 +261,10 @@ class FeishuSheetsShortcut:
         return resp
 
     def create_sheet(
-            self,
-            ss_token: str,
-            title: str,
-            index: int = 0,
+        self,
+        ss_token: str,
+        title: str,
+        index: int = 0,
     ) -> Dict[str, str]:
         r = extra_sheets_v2_model
         op_sheet = r.AddSheet(
@@ -235,9 +287,9 @@ class FeishuSheetsShortcut:
         return sheet_name__sheet_id
 
     def remove_sheet(
-            self,
-            ss_token: str,
-            sheet_id: str,
+        self,
+        ss_token: str,
+        sheet_id: str,
     ) -> None:
         r = extra_sheets_v2_model
         op_sheet = r.DeleteSheet(sheet_id=sheet_id)
@@ -249,11 +301,11 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def merge_cells(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            cr: CellsRange,
-            merge_type: Literal["MERGE_ALL", "MERGE_ROWS", "MERGE_COLUMNS"] = "MERGE_ALL",
+        self,
+        ss_token: str,
+        sheet_id: str,
+        cr: CellsRange,
+        merge_type: Literal["MERGE_ALL", "MERGE_ROWS", "MERGE_COLUMNS"] = "MERGE_ALL",
     ) -> None:
         r = extra_sheets_v2_model
         range_text = f"{sheet_id}!" + cr.to_param_range_pos_part()
@@ -275,9 +327,9 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def unmerge_cells(
-            self,
-            ss_token: str,
-            sr: SheetRange,
+        self,
+        ss_token: str,
+        sr: SheetRange,
     ) -> None:
         r = extra_sheets_v2_model
         range_text = sr.to_param_range()
@@ -297,12 +349,12 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def prepend_insert_values(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            cr: Optional[CellsRange] = None,
-            values: Optional[Sequence[Sequence[Any]]] = None,
-            headers: Sequence[Any] = (),
+        self,
+        ss_token: str,
+        sheet_id: str,
+        cr: Optional[CellsRange] = None,
+        values: Optional[Sequence[Sequence[Any]]] = None,
+        headers: Sequence[Any] = (),
     ) -> None:
         if not values:
             raise FeishuSheetsShortcutOperationError("input invalid")
@@ -342,13 +394,13 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def append_insert_values(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            cr: Optional[CellsRange] = None,
-            values: Optional[Sequence[Sequence[Any]]] = None,
-            headers: Sequence[Any] = (),
-            insert_data_option: Literal["OVERWRITE", "INSERT_ROWS"] = "OVERWRITE",
+        self,
+        ss_token: str,
+        sheet_id: str,
+        cr: Optional[CellsRange] = None,
+        values: Optional[Sequence[Sequence[Any]]] = None,
+        headers: Sequence[Any] = (),
+        insert_data_option: Literal["OVERWRITE", "INSERT_ROWS"] = "OVERWRITE",
     ) -> None:
         if not values:
             raise FeishuSheetsShortcutOperationError("input invalid")
@@ -389,10 +441,10 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def batch_update_values(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            cr_values: List[Tuple[CellsRange, Sequence[Sequence[Any]]]],
+        self,
+        ss_token: str,
+        sheet_id: str,
+        cr_values: List[Tuple[CellsRange, Sequence[Sequence[Any]]]],
     ) -> None:
         if not cr_values:
             raise FeishuSheetsShortcutOperationError("input invalid")
@@ -431,14 +483,14 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def batch_read_values(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            crs: List[CellsRange],
-            value_render_option: Literal[
-                "ToString", "FormattedValue", "Formula", "UnformattedValue"
-            ] = "ToString",
-            date_time_render_option: str = "FormattedString",
+        self,
+        ss_token: str,
+        sheet_id: str,
+        crs: List[CellsRange],
+        value_render_option: Literal[
+            "ToString", "FormattedValue", "Formula", "UnformattedValue"
+        ] = "ToString",
+        date_time_render_option: str = "FormattedString",
     ) -> Dict[str, List[list]]:
         if not crs:
             raise FeishuSheetsShortcutOperationError("input invalid")
@@ -463,12 +515,12 @@ class FeishuSheetsShortcut:
         return range_cr__values
 
     def update_formula_value_cell(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            formula_text: str,
-            result_cell_pos: CellPos,
-            auto_merge_cells_range: Optional[CellsRange] = None,
+        self,
+        ss_token: str,
+        sheet_id: str,
+        formula_text: str,
+        result_cell_pos: CellPos,
+        auto_merge_cells_range: Optional[CellsRange] = None,
     ) -> None:
         values = [
             [
@@ -493,12 +545,12 @@ class FeishuSheetsShortcut:
             )
 
     def update_formula_value_cell_using_sum_of_cell_range(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            target_cells_range: CellsRange,
-            result_cell_pos: CellPos,
-            auto_merge_cells_range: Optional[CellsRange] = None,
+        self,
+        ss_token: str,
+        sheet_id: str,
+        target_cells_range: CellsRange,
+        result_cell_pos: CellPos,
+        auto_merge_cells_range: Optional[CellsRange] = None,
     ) -> None:
         self.update_formula_value_cell(
             ss_token=ss_token,
@@ -509,13 +561,13 @@ class FeishuSheetsShortcut:
         )
 
     def insert_dimension(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            dimension: Literal["ROWS", "COLUMNS"] = "ROWS",
-            start_index=0,
-            end_index=1,
-            inherit_style=None,
+        self,
+        ss_token: str,
+        sheet_id: str,
+        dimension: Literal["ROWS", "COLUMNS"] = "ROWS",
+        start_index=0,
+        end_index=1,
+        inherit_style=None,
     ) -> None:
         resp = (
             self.extra_sheets_v2_service.spreadsheetss.insert_dimension_range(
@@ -538,12 +590,12 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def delete_dimension(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            dimension: Literal["ROWS", "COLUMNS"] = "ROWS",
-            start_index=1,
-            end_index=1,
+        self,
+        ss_token: str,
+        sheet_id: str,
+        dimension: Literal["ROWS", "COLUMNS"] = "ROWS",
+        start_index=1,
+        end_index=1,
     ) -> None:
         resp = (
             self.extra_sheets_v2_service.spreadsheetss.dimension_range_delete(
@@ -565,9 +617,9 @@ class FeishuSheetsShortcut:
             raise FeishuSheetsShortcutOperationError(str(resp))
 
     def truncate_sheet(
-            self,
-            ss_token: str,
-            sheet_id: str,
+        self,
+        ss_token: str,
+        sheet_id: str,
     ):
         sheet_id__sheet = {
             s.sheet_id: s
@@ -595,13 +647,13 @@ class FeishuSheetsShortcut:
         start_index = 1 + n_inserted
         end_index = n_rows + n_inserted
         for st, ed in [
-                          (i, min(i + N_MAX_DELETE_LINE, end_index))
-                          for i in range(
+            (i, min(i + N_MAX_DELETE_LINE, end_index))
+            for i in range(
                 start_index,
                 end_index + 1,
                 N_MAX_DELETE_LINE,
             )
-                      ][::-1]:
+        ][::-1]:
             self.delete_dimension(
                 ss_token=ss_token,
                 sheet_id=sheet_id,
@@ -610,11 +662,11 @@ class FeishuSheetsShortcut:
             )
 
     def replace_sheet_by_values(
-            self,
-            ss_token: str,
-            sheet_id: str,
-            values: List[list],
-            headers: Sequence[Any] = (),
+        self,
+        ss_token: str,
+        sheet_id: str,
+        values: List[list],
+        headers: Sequence[Any] = (),
     ):
         self.truncate_sheet(
             ss_token=ss_token,
