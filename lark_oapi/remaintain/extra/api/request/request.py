@@ -1,6 +1,7 @@
 from typing import IO, Any, Callable, Dict, List, Tuple, Union, TypeVar, Generic
 
 import requests
+from requests.adapters import HTTPAdapter
 
 from ...model import OapiHeader
 from ... import VERSION
@@ -87,7 +88,7 @@ class Request(Generic[T]):
         self.session = requests.Session()  # type: requests.Session
         self.response = None  # type: Union[requests.Response, None]
 
-    def prepare(self):  # type: () -> None
+    def prepare(self, config: Config):
         option = Option()
         for operation_fn in self.request_opts:
             operation_fn(option)
@@ -116,6 +117,11 @@ class Request(Generic[T]):
 
         if option.timeout is not None:
             self.timeout = option.timeout
+
+        if config.requests_retry_config is not None:
+            self.session.mount(
+                "https://", HTTPAdapter(max_retries=config.requests_retry_config)
+            )
 
     @staticmethod
     def send_by_auth(path, method, body):
@@ -224,7 +230,7 @@ class Handlers:
         self.resp = resp
 
     def prepare(self):  # type: () -> None
-        self.req.prepare()
+        self.req.prepare(self.config)
         req, conf = self.req, self.config
 
         if not req.http_path.startswith("http"):
