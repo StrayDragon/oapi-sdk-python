@@ -18,7 +18,7 @@ DEFAULT_RETRY_CONFIG = urllib3.Retry(
 class FeishuOpenAPICompactSettings:
     app_id: str
     app_secret: str
-    name: str = "Feishu OAPI"
+    name: str = "Feishu OAPI App"
     log_level: int = LEVEL_ERROR
     requests_retry_config: Optional[urllib3.Retry] = None
 
