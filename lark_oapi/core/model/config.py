@@ -1,5 +1,7 @@
 from typing import Optional
 
+import urllib3
+
 from lark_oapi.core import AppType, LogLevel
 from lark_oapi.core.cache import ICache
 from lark_oapi.core.const import FEISHU_DOMAIN
@@ -16,3 +18,4 @@ class Config(object):
         self.enable_set_token: bool = False  # 是否允许手动设置 token, 默认不开启; 开启后需在 request_option 中配置 token
         self.cache: Optional[ICache] = None  # 自定义缓存, 默认使用预置的本地缓存
         self.log_level: LogLevel = LogLevel.WARNING  # 日志级别, 默认为 WARNING
+        self.requests_retry_config: Optional[urllib3.Retry] = None  # 内部请求重试配置
