@@ -91,7 +91,9 @@ class Client(object):
     def builder() -> "ClientBuilder":
         return ClientBuilder()
 
-    def request(self, request: BaseRequest, option: RequestOption = RequestOption()) -> BaseResponse:
+    def request(
+        self, request: BaseRequest, option: RequestOption = RequestOption()
+    ) -> BaseResponse:
         # 鉴权、获取token
         verify(self._config, request, option)
 
@@ -148,6 +150,12 @@ class ClientBuilder(object):
 
     def log_level(self, log_level: LogLevel) -> "ClientBuilder":
         self._config.log_level = log_level
+        return self
+
+    def requests_retry_config(
+        self, requests_retry_config: Optional[urllib3.Retry]
+    ) -> "ClientBuilder":
+        self._config.requests_retry_config = requests_retry_config
         return self
 
     def build(self) -> Client:
