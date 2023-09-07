@@ -33,7 +33,7 @@ class Option:
         self.is_response_stream = False  # type: bool
         self.path_params = {}  # type: Union[None, Dict[str, str]]
         self.query_params = {}  # type: Union[None, Dict[str, str]]
-        self.timeout = 30  # type: Union[None, int]
+        self.timeout = None  # type: Union[None, int]
         self.response_stream_file = None  # type: Union[None, IO[Any]]
         self.need_help_desk_auth = False  # type: bool
 
