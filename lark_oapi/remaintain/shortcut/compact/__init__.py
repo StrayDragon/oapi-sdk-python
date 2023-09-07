@@ -10,7 +10,7 @@ from lark_oapi.remaintain.extra import DOMAIN_FEISHU, LEVEL_ERROR
 DEFAULT_RETRY_CONFIG = urllib3.Retry(
     total=3,
     backoff_factor=0.1,
-    status_forcelist=[502, 503, 504],
+    status_forcelist=frozenset([413, 429, 502, 503, 504]),
 )
 
 
