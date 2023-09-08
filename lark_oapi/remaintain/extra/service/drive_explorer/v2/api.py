@@ -86,7 +86,7 @@ class FileService:
         return FileDocsDeleteReqCall(self, request_opts=request_opts)
 
     def spreadsheets_delete(
-        self, tenant_key=None, user_access_token=None, timeout=None
+            self, tenant_key=None, user_access_token=None, timeout=None
     ):
         # type: (str, str, int) -> FileSpreadsheetsDeleteReqCall
 
