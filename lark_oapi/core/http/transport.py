@@ -34,7 +34,9 @@ class Transport(object):
 
         with requests.Session() as session:
             if isinstance(conf.requests_retry_config, urllib3.Retry):
-                session.mount('https://', HTTPAdapter(max_retries=conf.requests_retry_config))
+                retry_adapter = HTTPAdapter(max_retries=conf.requests_retry_config)
+                session.mount('https://', retry_adapter)
+                session.mount('http://', retry_adapter)
             response = session.request(
                 str(req.http_method.name),
                 url,
