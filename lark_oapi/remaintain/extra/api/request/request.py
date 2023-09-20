@@ -41,13 +41,13 @@ class Option:
 
 class Request(Generic[T]):
     def __init__(
-        self,
-        http_path,
-        http_method,
-        access_token_types,
-        request_body,
-        output_class=dict,
-        request_opts=None,
+            self,
+            http_path,
+            http_method,
+            access_token_types,
+            request_body,
+            output_class=dict,
+            request_opts=None,
     ):
         # type: (str, str, Union[List[str], str], Any, T, List[Callable[[Option], Any]]) -> None
 
@@ -98,13 +98,13 @@ class Request(Generic[T]):
         self.need_help_desk_auth = option.need_help_desk_auth
 
         if option.tenant_key != "" and self.accessible_token_type_list.count(
-            ACCESS_TOKEN_TYPE_TENANT
+                ACCESS_TOKEN_TYPE_TENANT
         ):
             self.access_token_type = ACCESS_TOKEN_TYPE_TENANT
             self.tenant_key = option.tenant_key
 
         if option.user_access_token != "" and self.accessible_token_type_list.count(
-            ACCESS_TOKEN_TYPE_USER
+                ACCESS_TOKEN_TYPE_USER
         ):
             self.access_token_type = ACCESS_TOKEN_TYPE_USER
             self.user_access_token = option.user_access_token
@@ -119,9 +119,9 @@ class Request(Generic[T]):
             self.timeout = option.timeout
 
         if config.requests_retry_config is not None:
-            self.session.mount(
-                "https://", HTTPAdapter(max_retries=config.requests_retry_config)
-            )
+            retry_adapter = HTTPAdapter(max_retries=config.requests_retry_config)
+            self.session.mount("https://", retry_adapter)
+            self.session.mount("http://", retry_adapter)
 
     @staticmethod
     def send_by_auth(path, method, body):
@@ -250,16 +250,16 @@ class Handlers:
             raise ERR_ACCESS_TOKEN_TYPE_INVALID
 
         if (
-            req.access_token_type == ACCESS_TOKEN_TYPE_USER
-            and req.user_access_token == ""
+                req.access_token_type == ACCESS_TOKEN_TYPE_USER
+                and req.user_access_token == ""
         ):
             raise ERR_USER_ACCESS_TOKEN_KEY_IS_EMPTY
 
         settings = config.app_settings
         if settings.app_type == APP_TYPE_ISV:
             if (
-                req.access_token_type == ACCESS_TOKEN_TYPE_TENANT
-                and req.tenant_key == ""
+                    req.access_token_type == ACCESS_TOKEN_TYPE_TENANT
+                    and req.tenant_key == ""
             ):
                 raise ERR_TENANT_KEY_IS_EMPTY
 
@@ -317,19 +317,19 @@ class Handlers:
             if resp.status_code != 200:
                 raise APIError(
                     message="response status_code:%d, not equal 200, body:%s"
-                    % (resp.status_code, resp.content)
+                            % (resp.status_code, resp.content)
                 )
             return
 
         if not content_type or not content_type.count(CONTENT_TYPE_JSON):
             raise APIError(
                 message="response request_id:%s, status_code: %d, content-type: %s, body: %s "
-                % (
-                    self.ctx.get_request_id(),
-                    resp.status_code,
-                    content_type,
-                    resp.content,
-                )
+                        % (
+                            self.ctx.get_request_id(),
+                            resp.status_code,
+                            content_type,
+                            resp.content,
+                        )
             )
 
     def parse_response(self):  # type: () -> None
