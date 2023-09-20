@@ -1,10 +1,14 @@
-import requests
-from requests_toolbelt import MultipartEncoder
+from typing import Optional, Dict
 
-from lark_oapi.core.const import *
+import requests
+from requests.adapters import HTTPAdapter
+from requests_toolbelt import MultipartEncoder
+import urllib3
+
+from lark_oapi.core.const import UTF_8, USER_AGENT, PROJECT, VERSION, AUTHORIZATION
 from lark_oapi.core.json import JSON
 from lark_oapi.core.log import logger
-from lark_oapi.core.model import *
+from lark_oapi.core.model import Config, BaseRequest, RequestOption, RawResponse, AccessTokenType
 
 
 class Transport(object):
@@ -24,14 +28,17 @@ class Transport(object):
         if data is not None and not isinstance(data, MultipartEncoder):
             data = JSON.marshal(req.body).encode(UTF_8)
 
-        response = requests.request(
-            str(req.http_method.name),
-            url,
-            headers=req.headers,
-            params=req.queries,
-            data=data,
-            timeout=conf.timeout,
-        )
+        with requests.Session() as session:
+            if isinstance(conf.requests_retry_config, urllib3.Retry):
+                session.mount('https://', HTTPAdapter(max_retries=conf.requests_retry_config))
+            response = session.request(
+                str(req.http_method.name),
+                url,
+                headers=req.headers,
+                params=req.queries,
+                data=data,
+                timeout=conf.timeout,
+            )
 
         logger.debug(f"{str(req.http_method.name)} {url} {response.status_code}, "
                      f"headers: {JSON.marshal(headers)}, "
