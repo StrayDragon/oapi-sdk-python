@@ -33,9 +33,9 @@ class FeishuGroupRobotShortCut:
         if not isinstance(self.requests_session, requests.Session):
             self.requests_session = requests.Session()
         if isinstance(self.requests_retry_config, urllib3.Retry):
-            self.requests_session.mount(
-                "https://", HTTPAdapter(max_retries=self.requests_retry_config)
-            )
+            retry_adapter = HTTPAdapter(max_retries=self.requests_retry_config)
+            self.requests_session.mount('https://', retry_adapter)
+            self.requests_session.mount('http://', retry_adapter)
 
     @classmethod
     def gen_sign(cls, timestamp: int, secret: str):
