@@ -1,4 +1,5 @@
 import dataclasses
+import datetime
 from typing import Any, List, Optional, Sequence, Tuple, Dict
 
 from typing_extensions import Literal
@@ -191,7 +192,7 @@ class FeishuSheetsShortcut:
         further_cell_range = cond_cells_range
         result = None
         for text in texts:
-            result = self.find_cell_location_in_sheet(
+            result = self.find_cell_locations_in_sheet(
                 ss_token=ss_token,
                 sheet_id=sheet_id,
                 text=text,
@@ -678,3 +679,29 @@ class FeishuSheetsShortcut:
             values=values,
             headers=headers,
         )
+
+    def insert_image_to_cell(
+        self,
+        ss_token: str,
+        sheet_id: str,
+        cell_pos: CellPos,
+        image_byte_array: List[int],
+        image_name: str = "",
+    ):
+        cp = cell_pos.to_param_range()
+        if not image_name:
+            image_name = f"photo-{cp}-{str(datetime.datetime.now())}"
+        body_range = f"{sheet_id}!{cp}:{cp}"
+        resp = (
+            self.extra_sheets_v2_service.spreadsheetss.values_image(
+                body=extra_sheets_v2_model.SpreadsheetsValuesImageReqBody(
+                    range=body_range,
+                    image=image_byte_array,
+                    name=image_name,
+                )
+            )
+            .set_spreadsheetToken(ss_token)
+            .do()
+        )
+        if resp.code != 0:
+            raise FeishuSheetsShortcutOperationError(str(resp))
