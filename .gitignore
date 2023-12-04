@@ -12,3 +12,6 @@ tests/
 .env
 sensitive_info_result.txt
 .venv
+
+.pytest_cache
+.coverage
