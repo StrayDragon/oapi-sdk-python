@@ -6,7 +6,7 @@ with open("README.md", mode="r", encoding="utf-8") as f:
 
 setup(
     name="lark-oapi-shortcut",
-    version="2023120518",
+    version="2023.12.0518",
     description="Lark OpenAPI SDK for Python",
     long_description=readme,
     long_description_content_type="text/markdown",
