@@ -447,7 +447,7 @@ class ValueRange:
     )
     range = attr.ib(type=str, default=None, metadata={"json": "range"})
     revision = attr.ib(type=int, default=None, metadata={"json": "revision"})
-    values = attr.ib(type=List[List[Any]], default=None, metadata={"json": "values"})
+    values = attr.ib(type=List[list], default=None, metadata={"json": "values"})
 
 
 @to_json_decorator
