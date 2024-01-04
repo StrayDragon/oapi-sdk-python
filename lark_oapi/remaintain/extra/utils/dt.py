@@ -56,12 +56,8 @@ def make_datatype(t, kwargs):
 
     kwargs = deepcopy(kwargs)
 
-    if PY3:
-        string_types = (str,)
-        integer_types = [int]
-    else:  # python2
-        string_types = (basestring,)
-        integer_types = [long, int]
+    string_types = (str,)
+    integer_types = [int]
 
     long_type = integer_types[0]
 
@@ -75,7 +71,7 @@ def make_datatype(t, kwargs):
         return kwargs
 
     if isinstance(kwargs, list):
-        return [make_datatype(t.__args__[0], i) for i in kwargs]
+        return [make_datatype(t.__args__[0] if hasattr(t, "__args__") else type(i), i) for i in kwargs]
 
     if not hasattr(t, "__attrs_attrs__"):
         return kwargs
