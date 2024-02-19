@@ -16,6 +16,7 @@ from .app_table import *
 from .app_table_create_header import *
 from .app_table_field import *
 from .app_table_field_description import *
+from .app_table_field_for_list import *
 from .app_table_field_property import *
 from .app_table_field_property_option import *
 from .app_table_form import *
@@ -27,6 +28,7 @@ from .app_table_view_property import *
 from .app_table_view_property_filter_info import *
 from .app_table_view_property_filter_info_condition import *
 from .app_table_view_property_hierarchy_config import *
+from .app_workflow import *
 from .attachment import *
 from .batch_create_app_role_member_request import *
 from .batch_create_app_role_member_request_body import *
@@ -53,6 +55,8 @@ from .batch_update_app_table_record_request import *
 from .batch_update_app_table_record_request_body import *
 from .batch_update_app_table_record_response import *
 from .batch_update_app_table_record_response_body import *
+from .children_filter import *
+from .condition import *
 from .copy_app_dashboard_request import *
 from .copy_app_dashboard_request_body import *
 from .copy_app_dashboard_response import *
@@ -97,8 +101,10 @@ from .delete_app_table_response import *
 from .delete_app_table_view_request import *
 from .delete_app_table_view_response import *
 from .delete_record import *
+from .department_id import *
 from .display_app import *
 from .display_app_v2 import *
+from .filter_info import *
 from .get_app_request import *
 from .get_app_response import *
 from .get_app_response_body import *
@@ -156,6 +162,11 @@ from .rating import *
 from .req_app import *
 from .req_table import *
 from .req_view import *
+from .search_app_table_record_request import *
+from .search_app_table_record_request_body import *
+from .search_app_table_record_response import *
+from .search_app_table_record_response_body import *
+from .sort import *
 from .update_app_request import *
 from .update_app_request_body import *
 from .update_app_response import *

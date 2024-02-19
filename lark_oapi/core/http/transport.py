@@ -1,10 +1,18 @@
+import json
+
+import httpx
 import requests
 from requests_toolbelt import MultipartEncoder
 
-from lark_oapi.core.const import *
+import requests
+from requests.adapters import HTTPAdapter
+from requests_toolbelt import MultipartEncoder
+import urllib3
+
+from lark_oapi.core.const import UTF_8, USER_AGENT, PROJECT, VERSION, AUTHORIZATION
 from lark_oapi.core.json import JSON
 from lark_oapi.core.log import logger
-from lark_oapi.core.model import *
+from lark_oapi.core.model import Config, BaseRequest, RequestOption, RawResponse, AccessTokenType
 
 
 class Transport(object):
@@ -24,14 +32,19 @@ class Transport(object):
         if data is not None and not isinstance(data, MultipartEncoder):
             data = JSON.marshal(req.body).encode(UTF_8)
 
-        response = requests.request(
-            str(req.http_method.name),
-            url,
-            headers=req.headers,
-            params=req.queries,
-            data=data,
-            timeout=conf.timeout,
-        )
+        with requests.Session() as session:
+            if isinstance(conf.requests_retry_config, urllib3.Retry):
+                retry_adapter = HTTPAdapter(max_retries=conf.requests_retry_config)
+                session.mount('https://', retry_adapter)
+                session.mount('http://', retry_adapter)
+            response = session.request(
+                str(req.http_method.name),
+                url,
+                headers=req.headers,
+                params=req.queries,
+                data=data,
+                timeout=conf.timeout,
+            )
 
         logger.debug(f"{str(req.http_method.name)} {url} {response.status_code}, "
                      f"headers: {JSON.marshal(headers)}, "
@@ -44,6 +57,53 @@ class Transport(object):
         resp.content = response.content
 
         return resp
+
+    @staticmethod
+    async def aexecute(conf: Config, req: BaseRequest, option: Optional[RequestOption] = None) -> RawResponse:
+        if option is None:
+            option = RequestOption()
+
+        # 拼接url
+        url: str = _build_url(conf.domain, req.uri, req.paths)
+
+        # 组装header
+        headers: Dict[str, str] = _build_header(req, option)
+
+        json_, files, data = None, None, None
+        if req.files:
+            # multipart/form-data
+            files = req.files
+            if req.body is not None:
+                data = json.loads(JSON.marshal(req.body))
+        elif req.body is not None:
+            # application/json
+            json_ = json.loads(JSON.marshal(req.body))
+
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                str(req.http_method.name),
+                url,
+                headers=req.headers,
+                params=req.queries,
+                json=json_,
+                data=data,
+                files=files,
+                timeout=conf.timeout,
+            )
+
+            logger.debug(
+                f"{str(req.http_method.name)} {url} {response.status_code}"
+                f"{f', headers: {JSON.marshal(headers)}' if headers else ''}"
+                f"{f', params: {JSON.marshal(req.queries)}' if req.queries else ''}"
+                f"{f', body: {JSON.marshal(_merge_dicts(json_, files, data))}' if json_ or files or data else ''}"
+            )
+
+            resp = RawResponse()
+            resp.status_code = response.status_code
+            resp.headers = dict(response.headers)
+            resp.content = response.content
+
+            return resp
 
 
 def _build_url(domain: str, uri: str, paths: Dict[str, str]) -> str:
@@ -76,3 +136,11 @@ def _build_header(request: BaseRequest, option: RequestOption) -> Dict[str, str]
             headers[AUTHORIZATION] = f"Bearer {option.user_access_token}"
 
     return headers
+
+
+def _merge_dicts(*dicts):
+    res = {}
+    for d in dicts:
+        if d is not None:
+            res.update(d)
+    return res

@@ -12,6 +12,7 @@ class BaseRequest(object):
         self.queries: List[Tuple[str, str]] = []
         self.headers: Dict[str, str] = {}
         self.body: Any = None
+        self.files: Optional[Dict] = None
 
     def add_query(self, k: str, v: Any) -> None:
         if isinstance(v, (list, tuple)):
@@ -27,8 +28,8 @@ class BaseRequest(object):
 
 class BaseRequestBuilder(object):
 
-    def __init__(self, base_request: BaseRequest = BaseRequest()) -> None:
-        self._base_request: BaseRequest = base_request
+    def __init__(self) -> None:
+        self._base_request: BaseRequest = BaseRequest()
 
     def http_method(self, http_method: HttpMethod) -> "BaseRequestBuilder":
         self._base_request.http_method = http_method

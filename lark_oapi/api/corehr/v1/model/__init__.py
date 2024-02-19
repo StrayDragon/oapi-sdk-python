@@ -111,6 +111,7 @@ from .dimension_value import *
 from .education import *
 from .email import *
 from .emergency_contact import *
+from .employee_date_type import *
 from .employee_type import *
 from .employment import *
 from .employment_cost_center import *
@@ -215,6 +216,7 @@ from .leave_balances_leave_response import *
 from .leave_balances_leave_response_body import *
 from .leave_granting_record import *
 from .leave_request import *
+from .leave_request_detail import *
 from .leave_request_history_leave_request import *
 from .leave_request_history_leave_response import *
 from .leave_request_history_leave_response_body import *
@@ -281,6 +283,9 @@ from .location import *
 from .lookup_field_setting import *
 from .manage_relation import *
 from .management_scope import *
+from .match_compensation_standard_request import *
+from .match_compensation_standard_response import *
+from .match_compensation_standard_response_body import *
 from .name import *
 from .national_id import *
 from .national_id_type import *
@@ -294,6 +299,8 @@ from .offboarding_data import *
 from .offboarding_info import *
 from .offboarding_reason import *
 from .p2_corehr_contract_created_v1 import *
+from .p2_corehr_contract_deleted_v1 import *
+from .p2_corehr_contract_updated_v1 import *
 from .p2_corehr_department_created_v1 import *
 from .p2_corehr_department_deleted_v1 import *
 from .p2_corehr_department_updated_v1 import *
@@ -303,13 +310,20 @@ from .p2_corehr_employment_deleted_v1 import *
 from .p2_corehr_employment_resigned_v1 import *
 from .p2_corehr_employment_updated_v1 import *
 from .p2_corehr_job_change_updated_v1 import *
+from .p2_corehr_job_created_v1 import *
 from .p2_corehr_job_data_changed_v1 import *
 from .p2_corehr_job_data_employed_v1 import *
+from .p2_corehr_job_deleted_v1 import *
+from .p2_corehr_job_updated_v1 import *
 from .p2_corehr_offboarding_updated_v1 import *
 from .p2_corehr_org_role_authorization_updated_v1 import *
 from .p2_corehr_person_created_v1 import *
 from .p2_corehr_person_deleted_v1 import *
 from .p2_corehr_person_updated_v1 import *
+from .p2_corehr_pre_hire_updated_v1 import *
+from .patch_company_request import *
+from .patch_company_response import *
+from .patch_company_response_body import *
 from .patch_contract_request import *
 from .patch_contract_response import *
 from .patch_contract_response_body import *
@@ -351,6 +365,7 @@ from .person_info_mys import *
 from .person_name import *
 from .personal_profile import *
 from .phone import *
+from .phone_number_and_area_code import *
 from .pre_hire import *
 from .pre_hire_query import *
 from .previous_employer import *
@@ -385,6 +400,7 @@ from .search_offboarding_request_body import *
 from .search_offboarding_response import *
 from .search_offboarding_response_body import *
 from .security_group import *
+from .sort_option import *
 from .subdivision import *
 from .submit_offboarding_request import *
 from .submit_offboarding_request_body import *
@@ -394,6 +410,7 @@ from .subregion import *
 from .support_cost_center_item import *
 from .temp import *
 from .text_field_setting import *
+from .tranfer_employment_info import *
 from .transfer_info import *
 from .transfer_reason import *
 from .transfer_type import *
@@ -402,5 +419,9 @@ from .upload_person_request_body import *
 from .upload_person_response import *
 from .upload_person_response_body import *
 from .user_id import *
+from .wk_calendar_i18n import *
+from .wk_option import *
+from .work_calendar_detail import *
+from .work_calendar_filter import *
 from .work_experience import *
 from .working_hours_type import *

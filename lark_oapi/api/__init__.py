@@ -11,6 +11,7 @@ from . import block
 from . import calendar
 from . import contact
 from . import corehr
+from . import document_ai
 from . import docx
 from . import drive
 from . import ehr
@@ -20,6 +21,7 @@ from . import helpdesk
 from . import hire
 from . import human_authentication
 from . import im
+from . import lingo
 from . import mail
 from . import mdm
 from . import meeting_room
@@ -27,12 +29,15 @@ from . import okr
 from . import optical_char_recognition
 from . import passport
 from . import personal_settings
+from . import report
 from . import search
+from . import security_and_compliance
 from . import sheets
 from . import speech_to_text
 from . import task
 from . import tenant
 from . import translation
 from . import vc
+from . import verification
 from . import wiki
 from . import workplace

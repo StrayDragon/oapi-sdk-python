@@ -101,6 +101,10 @@ from .forward_message_request import *
 from .forward_message_request_body import *
 from .forward_message_response import *
 from .forward_message_response_body import *
+from .forward_thread_request import *
+from .forward_thread_request_body import *
+from .forward_thread_response import *
+from .forward_thread_response_body import *
 from .get_chat_announcement_request import *
 from .get_chat_announcement_response import *
 from .get_chat_announcement_response_body import *
@@ -155,9 +159,6 @@ from .list_notify_status import *
 from .list_pin_request import *
 from .list_pin_response import *
 from .list_pin_response_body import *
-from .list_special_focus_request import *
-from .list_special_focus_response import *
-from .list_special_focus_response_body import *
 from .list_tabs_chat_tab_request import *
 from .list_tabs_chat_tab_response import *
 from .list_tabs_chat_tab_response_body import *
@@ -229,13 +230,10 @@ from .sort_tabs_chat_tab_response import *
 from .sort_tabs_chat_tab_response_body import *
 from .special_focus import *
 from .special_focus_unread import *
+from .thread import *
 from .toolkit import *
 from .toolkit_callback import *
 from .toolkit_redirect_link import *
-from .unread_special_focus_request import *
-from .unread_special_focus_request_body import *
-from .unread_special_focus_response import *
-from .unread_special_focus_response_body import *
 from .update_chat_moderation_request import *
 from .update_chat_moderation_request_body import *
 from .update_chat_moderation_response import *

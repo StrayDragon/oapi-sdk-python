@@ -2,7 +2,7 @@
 PROJECT = "oapi-sdk-python"
 try:
     import pkg_resources
-    PKG_NAME = "lark-oapi"
+    PKG_NAME = "lark-oapi-shortcut"
     VERSION = pkg_resources.require(PKG_NAME)[0].version
 except:
     VERSION = "unknown"

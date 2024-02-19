@@ -1,6 +1,8 @@
 from .admin_dept_stat import *
 from .admin_user_stat import *
 from .administrator import *
+from .annual_report_map_float import *
+from .annual_report_map_int import *
 from .api_audit_common_drawers import *
 from .api_audit_drawer_info import *
 from .audit_android_context import *
@@ -28,6 +30,7 @@ from .create_badge_response import *
 from .create_badge_response_body import *
 from .delete_badge_grant_request import *
 from .delete_badge_grant_response import *
+from .department_id import *
 from .file import *
 from .file_list import *
 from .get_badge_grant_request import *
@@ -44,6 +47,9 @@ from .list_admin_dept_stat_response_body import *
 from .list_admin_user_stat_request import *
 from .list_admin_user_stat_response import *
 from .list_admin_user_stat_response_body import *
+from .list_audit_info_request import *
+from .list_audit_info_response import *
+from .list_audit_info_response_body import *
 from .list_badge_grant_request import *
 from .list_badge_grant_response import *
 from .list_badge_grant_response_body import *
@@ -67,3 +73,4 @@ from .user import *
 from .user_annual_report import *
 from .user_report2021 import *
 from .user_report2022 import *
+from .user_report2023 import *

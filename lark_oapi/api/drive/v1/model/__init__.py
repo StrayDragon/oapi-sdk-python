@@ -81,6 +81,8 @@ from .download_media_response import *
 from .export_task import *
 from .favorite import *
 from .file import *
+from .file_block_change_info import *
+from .file_change_info import *
 from .file_comment import *
 from .file_comment_reply import *
 from .file_favorite import *
@@ -99,6 +101,7 @@ from .get_file_statistics_request import *
 from .get_file_statistics_response import *
 from .get_file_statistics_response_body import *
 from .get_file_subscription_request import *
+from .get_file_subscription_request_body import *
 from .get_file_subscription_response import *
 from .get_file_subscription_response_body import *
 from .get_file_version_request import *
@@ -114,6 +117,9 @@ from .get_subscribe_file_request import *
 from .get_subscribe_file_response import *
 from .import_task import *
 from .import_task_mount_point import *
+from .list_file_comment_reply_request import *
+from .list_file_comment_reply_response import *
+from .list_file_comment_reply_response_body import *
 from .list_file_comment_request import *
 from .list_file_comment_response import *
 from .list_file_comment_response_body import *

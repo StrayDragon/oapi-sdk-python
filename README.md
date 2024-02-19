@@ -5,7 +5,7 @@
 ```shell
 pip install lark-oapi -U
 ```
-支持 Python 3.8 及以上
+支持 Python 3.7 及以上
 
 ## 简单示例
 ```python
@@ -300,6 +300,80 @@ if __name__ == "__main__":
 
 更多示例可参考：[事件回调](samples/event)
 
+## 处理卡片行为回调
+关于卡片行为相关的知识，可点击[这里查看](https://open.feishu.cn/document/ukTMukTMukTM/uczM3QjL3MzN04yNzcDN)
+
+### 基本用法
+开发者可以使用下面代码处理卡片回调，示例中使用 flask 启动 httpServer，如使用其他 web 框架，只需处理 http 出入参转换即可。
+
+```python
+from typing import Any
+
+from flask import Flask
+
+import lark_oapi as lark
+from lark_oapi.adapter.flask import *
+
+app = Flask(__name__)
+
+
+def do_interactive_card(data: lark.Card) -> Any:
+    print(lark.JSON.marshal(data))
+    content = {
+        "header": {
+            "title": {
+                "tag": "plain_text",
+                "content": "更新卡片成功"
+            },
+            "template": "green"
+        },
+        "elements": [
+            {
+                "tag": "div",
+                "text": {
+                    "tag": "lark_md",
+                    "content": "**Success!\n成功啦😄**"
+                }
+            },
+        ]
+    }
+    return content
+
+
+handler = lark.CardActionHandler.builder(lark.ENCRYPT_KEY, lark.VERIFICATION_TOKEN, lark.LogLevel.DEBUG) \
+    .register(do_interactive_card) \
+    .build()
+
+
+@app.route("/card", methods=["POST"])
+def card():
+    resp = handler.do(parse_req())
+    return parse_resp(resp)
+
+
+if __name__ == "__main__":
+    app.run(port=7777)
+
+```
+
+更多示例可参考：[事件回调](samples/card)
+
+## 扩展示例
+我们还基于 SDK 封装了常用的 API 组合调用及业务场景示例，如：
+* 消息
+  * [发送文件消息](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/im/send_file.py)
+  * [发送图片消息](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/im/send_image.py)
+* 通讯录
+  * [获取部门下所有用户列表](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/contact/list_user_by_department.py)
+* 多维表格
+  * [创建多维表格同时添加数据表](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/base/create_app_and_tables.py)
+* 电子表格
+  * [复制粘贴某个范围的单元格数据](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/sheets/copy_and_paste_by_range.py)
+  * [下载指定范围单元格的所有素材列表](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/composite_api/sheets/download_media_by_range.py)
+* 教程
+  * [机器人自动拉群报警](https://github.com/larksuite/oapi-sdk-python-demo/blob/main/quick_start/robot) ([开发教程](https://open.feishu.cn/document/home/message-development-tutorial/introduction))
+
+更多示例可参考：https://github.com/larksuite/oapi-sdk-python-demo
 
 ## License
 MIT

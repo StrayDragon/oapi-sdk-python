@@ -1,3 +1,5 @@
+from .attachment import *
+from .attachment_download_url_item import *
 from .batch_create_mailgroup_manager_request import *
 from .batch_create_mailgroup_manager_request_body import *
 from .batch_create_mailgroup_manager_response import *
@@ -69,7 +71,10 @@ from .delete_user_mailbox_alias_request import *
 from .delete_user_mailbox_alias_response import *
 from .delete_user_mailbox_request import *
 from .delete_user_mailbox_response import *
+from .department_id import *
 from .email_alias import *
+from .event_log import *
+from .folder import *
 from .get_mailgroup_member_request import *
 from .get_mailgroup_member_response import *
 from .get_mailgroup_member_response_body import *
@@ -113,6 +118,7 @@ from .list_user_mailbox_alias_request import *
 from .list_user_mailbox_alias_response import *
 from .list_user_mailbox_alias_response_body import *
 from .mail_address import *
+from .mail_contact import *
 from .mailgroup import *
 from .mailgroup_manager import *
 from .mailgroup_member import *
@@ -130,6 +136,12 @@ from .query_user_request import *
 from .query_user_request_body import *
 from .query_user_response import *
 from .query_user_response_body import *
+from .rule import *
+from .rule_action import *
+from .rule_action_item import *
+from .rule_condition import *
+from .rule_condition_item import *
+from .subscriber import *
 from .update_mailgroup_request import *
 from .update_mailgroup_response import *
 from .update_mailgroup_response_body import *
@@ -137,3 +149,4 @@ from .update_public_mailbox_request import *
 from .update_public_mailbox_response import *
 from .update_public_mailbox_response_body import *
 from .user import *
+from .user_id import *
