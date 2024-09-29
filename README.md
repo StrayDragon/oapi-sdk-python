@@ -1,3 +1,8 @@
+> [!WARNING]
+> 不再维护该Fork, 迁移到 https://github.com/StrayDragon/oapi-sdk-python-compact
+> 
+
+
 # 飞书开放接口 SDK
 为帮助开发者更加便捷地使用飞书开放能力开发应用，简化在接入飞书开放平台时的操作步骤，开放平台提供了统一的服务端 SDK。开发者可使用 SDK，快捷地开发功能，提升开发效率。
 
